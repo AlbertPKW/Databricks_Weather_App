@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather Intelligence — Sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:   #eef1ed;
+    --card:    #ffffff;
+    --ink:     #16202b;
+    --muted:   #64757f;
+    --rule:    #cdd7d2;
+    --deep:    #1f4e5f;
+    --deep-lo: #2c6b7f;
+    /* Severity colours follow the NWS convention so the chips mean the same
+       thing here as they do on a hazard map. */
+    --warning:  #d8472b;
+    --watch:    #d99219;
+    --advisory: #6e5aa8;
+    --calm:     #3f7d5a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 40px 20px 80px;
+    background:
+      linear-gradient(var(--rule) 1px, transparent 1px) 0 0 / 100% 28px,
+      var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 14px; }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--deep);
+  }
+
+  h1 {
+    font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 700;
+    font-size: clamp(30px, 6vw, 42px);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin: 8px 0 6px;
+  }
+
+  .lede { color: var(--muted); max-width: 56ch; margin: 0; }
+
+  nav { margin-top: 18px; display: flex; gap: 18px; font-size: 12px; }
+  nav a { color: var(--deep); text-decoration: none; border-bottom: 1px solid var(--rule); }
+  nav a:hover, nav a:focus-visible { border-bottom-color: var(--deep); }
+  nav a[aria-current="page"] { color: var(--ink); border-bottom: 2px solid var(--ink); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--deep);
+    padding: 22px;
+    margin-top: 26px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .field + .field { margin-top: 18px; }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+  }
+  input:focus-visible {
+    outline: 2px solid var(--deep);
+    outline-offset: 1px;
+    background: #fff;
+  }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  .checks { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+  .checks label {
+    display: flex; align-items: center; gap: 7px;
+    text-transform: none; letter-spacing: 0; font-size: 13px;
+    color: var(--ink); margin: 0; cursor: pointer;
+  }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+
+  button {
+    font: 500 13px/1 "IBM Plex Mono", monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    border: 1px solid var(--deep);
+    background: var(--deep);
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  button:hover:not(:disabled) { background: var(--deep-lo); }
+  button.secondary { background: transparent; color: var(--deep); }
+  button.secondary:hover:not(:disabled) { background: rgba(31,78,95,.08); }
+  button:disabled { opacity: .5; cursor: progress; }
+  button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .status { margin-top: 18px; font-size: 13px; min-height: 1.6em; }
+  .status.error { color: var(--warning); }
+  .status.ok { color: var(--calm); }
+
+  .tally {
+    display: flex; gap: 28px; flex-wrap: wrap;
+    margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--rule);
+  }
+  .tally div span {
+    display: block;
+    font-family: Archivo, sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .tally div small {
+    font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  .doc {
+    border-top: 1px solid var(--rule);
+    padding: 16px 0;
+  }
+  .doc:first-of-type { border-top: none; }
+
+  .doc-meta {
+    display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .chip {
+    padding: 2px 8px;
+    border: 1px solid currentColor;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+  .chip.alert    { color: var(--warning); }
+  .chip.forecast { color: var(--deep); }
+  .chip.Extreme, .chip.Severe   { color: var(--warning); }
+  .chip.Moderate                { color: var(--watch); }
+  .chip.Minor, .chip.Unknown    { color: var(--advisory); }
+
+  .doc h3 {
+    font-family: Archivo, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 8px 0 6px;
+  }
+  .doc p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .empty { color: var(--muted); padding: 24px 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">National Weather Service &rarr; Lakebase</p>
+    <h1>Weather Intelligence</h1>
+    <p class="lede">
+      Pull active alerts and narrative forecasts for a list of places, store the
+      free text in Postgres, and embed it for semantic search.
+    </p>
+    <nav>
+      <a href="/" aria-current="page">Sync</a>
+      <a href="/search">Search</a>
+      <a href="/healthz">Health</a>
+    </nav>
+  </header>
+
+  <section class="card">
+    <h2 class="eyebrow" style="margin:0 0 16px">Harvest documents</h2>
+
+    <div class="field">
+      <label for="locations">Locations</label>
+      <input type="text" id="locations" value="{{ default_locations }}"
+             placeholder="Chicago, IL; Austin, TX; 29.95,-90.07">
+      <p class="hint">Separate with semicolons. Use a city and state, or raw <code>lat,lon</code>. US only — that's the extent of NWS coverage.</p>
+    </div>
+
+    <div class="field">
+      <label>Document types</label>
+      <div class="checks">
+        <label><input type="checkbox" value="alert" checked> Active alerts</label>
+        <label><input type="checkbox" value="forecast" checked> Narrative forecast</label>
+        <label><input type="checkbox" value="forecast_hourly"> Hourly forecast</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="limit">Max per type, per location</label>
+      <input type="number" id="limit" value="50" min="1" max="500">
+    </div>
+
+    <div class="actions">
+      <button id="sync">Sync from NWS</button>
+      <button id="embed" class="secondary">Embed pending</button>
+      <button id="refresh" class="secondary">Reload list</button>
+    </div>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <div class="tally" id="tally" hidden>
+      <div><span id="tally-synced">0</span><small>Documents synced</small></div>
+      <div><span id="tally-chunks">—</span><small>Chunks embedded</small></div>
+    </div>
+  </section>
+
+  <section class="card" style="border-left-color: var(--rule)">
+    <h2 class="eyebrow" style="margin:0 0 4px">Stored documents</h2>
+    <div id="documents"><p class="empty">Loading…</p></div>
+  </section>
+
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const status = $("status");
+  const tally = $("tally");
+
+  function setStatus(message, kind) {
+    status.textContent = message;
+    status.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function selectedTypes() {
+    return [...document.querySelectorAll('.checks input:checked')].map(el => el.value);
+  }
+
+  function busy(on) {
+    ["sync", "embed", "refresh"].forEach(id => { $(id).disabled = on; });
+  }
+
+  async function postJSON(url, body) {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || resp.statusText);
+    return data;
+  }
+
+  async function syncNow() {
+    const locations = $("locations").value.split(";").map(s => s.trim()).filter(Boolean);
+    const types = selectedTypes();
+    if (!locations.length) return setStatus("Add at least one location.", "error");
+    if (!types.length) return setStatus("Pick at least one document type.", "error");
+
+    busy(true);
+    setStatus("Fetching from api.weather.gov…");
+    try {
+      const data = await postJSON("/weather/sync", {
+        locations, source_types: types, limit: Number($("limit").value) || 50,
+      });
+      tally.hidden = false;
+      $("tally-synced").textContent = data.synced;
+
+      const failed = Object.entries(data.errors || {});
+      const summary = `Synced ${data.synced} documents from ${Object.keys(data.locations).length} locations.`;
+      if (failed.length) {
+        setStatus(`${summary} Skipped: ${failed.map(([k, v]) => `${k} (${v})`).join("; ")}`, "error");
+      } else {
+        setStatus(summary + " Next: embed them.", "ok");
+      }
+      loadDocuments();
+    } catch (err) {
+      setStatus(err.message, "error");
+    } finally {
+      busy(false);
+    }
+  }
+
+  async function embedNow() {
+    busy(true);
+    setStatus("Embedding — the model loads on first use, so this can take a minute…");
+    try {
+      const data = await postJSON("/weather/embed", {});
+      tally.hidden = false;
+      $("tally-chunks").textContent = data.chunks_written;
+      setStatus(
+        data.documents_embedded
+          ? `Embedded ${data.documents_embedded} documents into ${data.chunks_written} chunks. Search is ready.`
+          : "Everything already has current vectors.",
+        "ok"
+      );
+    } catch (err) {
+      setStatus(err.message, "error");
+    } finally {
+      busy(false);
+    }
+  }
+
+  async function loadDocuments() {
+    const target = $("documents");
+    try {
+      const resp = await fetch("/weather/documents?limit=25");
+      const rows = await resp.json();
+      if (!resp.ok) throw new Error(rows.error || resp.statusText);
+
+      if (!rows.length) {
+        target.innerHTML = '<p class="empty">Nothing stored yet. Run a sync to fill this in.</p>';
+        return;
+      }
+
+      target.innerHTML = rows.map(row => `
+        <article class="doc">
+          <div class="doc-meta">
+            <span class="chip ${row.source_type}">${row.source_type}</span>
+            ${row.severity ? `<span class="chip ${row.severity}">${row.severity}</span>` : ""}
+            <span>${escapeHtml(row.location)}</span>
+            ${row.effective_at ? `<span>${new Date(row.effective_at).toLocaleString()}</span>` : ""}
+          </div>
+          <h3>${escapeHtml(row.headline || row.event || "Untitled")}</h3>
+          <p>${escapeHtml((row.narrative_text || "").slice(0, 220))}${(row.narrative_text || "").length > 220 ? "…" : ""}</p>
+        </article>
+      `).join("");
+    } catch (err) {
+      target.innerHTML = `<p class="empty">Couldn't load documents: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value == null ? "" : value;
+    return div.innerHTML;
+  }
+
+  $("sync").addEventListener("click", syncNow);
+  $("embed").addEventListener("click", embedNow);
+  $("refresh").addEventListener("click", loadDocuments);
+  loadDocuments();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Databricks Asset Bundle config for the Weather Intelligence app.
+# Deploy with: databricks bundle deploy -t dev   (or -t prod)
+# Wires up the harvest + embedding notebook as a scheduled Workflow
+# (see resources/ingest_weather_embeddings_job.yml).
+
+bundle:
+  name: weather-lakebase-app
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://<your-workspace-instance>.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://<your-workspace-instance>.cloud.databricks.com
+      root_path: /Shared/.bundle/${bundle.name}/${bundle.target}
