@@ -9,44 +9,18 @@ resources:
   jobs:
     ingest_weather_embeddings_job:
       name: "[${bundle.target}] Ingest Weather Embeddings"
-
-      # Every 30 minutes. Alerts are the time-sensitive half of the corpus -
-      # a flash flood warning is useless to retrieve an hour late - and the
-      # content_hash check means unchanged documents cost almost nothing.
-      # Drop to hourly or daily if you only care about forecasts.
-      schedule:
-        quartz_cron_expression: "0 0/30 * * * ?"
-        timezone_id: "UTC"
-        pause_status: PAUSED  # flip to UNPAUSED once a manual run succeeds
-
       email_notifications:
         on_failure:
           - ${workspace.current_user.userName}
 
       max_concurrent_runs: 1
 
-      job_clusters:
-        - job_cluster_key: default_cluster
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "i3.xlarge"
-            # Single node: every step here is driver-side Python (HTTP fetches,
-            # sentence-transformers, psycopg2 writes). Workers would sit idle.
-            num_workers: 0
-            spark_conf:
-              spark.master: "local[*]"
-              spark.databricks.cluster.profile: "singleNode"
-            custom_tags:
-              ResourceClass: "SingleNode"
-            data_security_mode: SINGLE_USER
-
       tasks:
         - task_key: ingest_weather_embeddings
-          job_cluster_key: default_cluster
           notebook_task:
             notebook_path: ../notebooks/ingest_weather_embeddings.py
             base_parameters:
-              locations: "Chicago, IL;Austin, TX;Miami, FL"
+              locations: Chicago, IL;Austin, TX;Miami, FL;New York, NY;Los Angeles, CA;Houston, TX;Phoenix, AZ
               documents_table: "weather_documents"
               embeddings_table: "weather_embeddings"
               embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
@@ -57,3 +31,8 @@ resources:
               chunk_size: "800"
               chunk_overlap: "100"
               skip_harvest: "false"
+      trigger:
+        pause_status: UNPAUSED
+        periodic:
+          interval: 1
+          unit: DAYS

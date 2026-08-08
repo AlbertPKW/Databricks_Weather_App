@@ -23,7 +23,6 @@ import weather_embeddings
 from weather_client import (
     SOURCE_ALERT,
     SOURCE_FORECAST,
-    SOURCE_HOURLY,
     LocationNotFound,
     WeatherClient,
     content_hash,
@@ -45,7 +44,7 @@ DEFAULT_LOCATIONS = [
     if loc.strip()
 ]
 
-VALID_SOURCE_TYPES = {SOURCE_ALERT, SOURCE_FORECAST, SOURCE_HOURLY}
+VALID_SOURCE_TYPES = {SOURCE_ALERT, SOURCE_FORECAST}
 
 MAX_TOP_K = 20
 MIN_TOP_K = 1
@@ -68,7 +67,6 @@ if os.environ.get("PRELOAD_EMBEDDING_MODEL", "").lower() in ("1", "true", "yes")
 @app.route("/healthz")
 def healthz():
     return jsonify({"status": "ok"})
-
 
 @app.errorhandler(Exception)
 def handle_exception(err):
@@ -109,8 +107,6 @@ def sync_weather():
     or fetch is reported in `errors` rather than failing the whole request -
     one bad entry shouldn't discard the documents already collected.
     """
-    lakebase.ensure_weather_tables()
-
     body = request.json if request.is_json else {}
 
     # An absent `locations` key falls back to the configured defaults; an

@@ -239,8 +239,6 @@ def ingest_pending(limit: int | None = None, batch_documents: int = 200) -> dict
     Returns counts rather than printing, so the Flask endpoint, the CLI, and
     the notebook can each report in their own way.
     """
-    lakebase.ensure_weather_tables()
-
     with lakebase.get_connection() as conn:
         documents = fetch_pending_documents(conn, limit=limit)
         logger.info("Found %d documents needing embeddings", len(documents))

@@ -135,7 +135,7 @@
     margin-top: 14px;
   }
   .hit.alert { border-left-color: var(--warning); }
-  .hit.forecast, .hit.forecast_hourly { border-left-color: var(--deep); }
+  .hit.forecast { border-left-color: var(--deep); }
 
   .hit-top {
     display: flex; justify-content: space-between; gap: 16px;
@@ -149,7 +149,7 @@
 
   .chip { padding: 2px 8px; border: 1px solid currentColor; font-size: 10px; letter-spacing: 0.1em; }
   .chip.alert { color: var(--warning); }
-  .chip.forecast, .chip.forecast_hourly { color: var(--deep); }
+  .chip.forecast { color: var(--deep); }
   .chip.Extreme, .chip.Severe { color: var(--warning); }
   .chip.Moderate { color: var(--watch); }
   .chip.Minor, .chip.Unknown { color: var(--advisory); }
@@ -198,7 +198,6 @@
     <nav>
       <a href="/">Sync</a>
       <a href="/search" aria-current="page">Search</a>
-      <a href="/healthz">Health</a>
     </nav>
   </header>
 
@@ -229,7 +228,6 @@
           <option value="">Any type</option>
           <option value="alert">Alerts only</option>
           <option value="forecast">Forecasts only</option>
-          <option value="forecast_hourly">Hourly only</option>
         </select>
       </div>
     </div>

@@ -34,7 +34,8 @@
 # COMMAND ----------
 
 # DBTITLE 1,Install dependencies
-# MAGIC %pip install -q 'databricks-sdk>=0.30.0' psycopg2-binary sentence-transformers requests
+# MAGIC %pip uninstall -y psycopg2 psycopg2-binary
+# MAGIC %pip install -q 'databricks-sdk>=0.30.0' sentence-transformers requests
 
 # COMMAND ----------
 
@@ -50,7 +51,7 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
-dbutils.widgets.text("locations", "Chicago, IL;Austin, TX;Miami, FL", "Locations (semicolon-separated)")
+dbutils.widgets.text("locations", "Chicago, IL;Austin, TX;Miami, FL;New York, NY; Los Angeles, CA;Houston, TX;Phoenix, AZ", "Locations (semicolon-separated)")
 dbutils.widgets.text("documents_table", "weather_documents", "Destination table (raw documents)")
 dbutils.widgets.text("embeddings_table", "weather_embeddings", "Destination table (vectors)")
 dbutils.widgets.text("embedding_model", "sentence-transformers/all-MiniLM-L6-v2", "Embedding model")
@@ -155,58 +156,6 @@ print(f"Connected to {info['db']} as {info['role']} "
 
 # COMMAND ----------
 
-DDL_STATEMENTS = [
-    "CREATE EXTENSION IF NOT EXISTS vector",
-    f"""
-    CREATE TABLE IF NOT EXISTS {DOCUMENTS_TABLE} (
-        id             TEXT PRIMARY KEY,
-        location       TEXT NOT NULL,
-        latitude       DOUBLE PRECISION,
-        longitude      DOUBLE PRECISION,
-        source_type    TEXT NOT NULL,
-        event          TEXT,
-        headline       TEXT,
-        narrative_text TEXT NOT NULL,
-        content_hash   TEXT NOT NULL,
-        severity       TEXT,
-        area_desc      TEXT,
-        issued_at      TIMESTAMPTZ,
-        effective_at   TIMESTAMPTZ,
-        expires_at     TIMESTAMPTZ,
-        payload        JSONB NOT NULL,
-        synced_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-    """,
-    f"CREATE INDEX IF NOT EXISTS idx_{DOCUMENTS_TABLE}_location ON {DOCUMENTS_TABLE} (location)",
-    f"CREATE INDEX IF NOT EXISTS idx_{DOCUMENTS_TABLE}_source_type ON {DOCUMENTS_TABLE} (source_type)",
-    f"""
-    CREATE TABLE IF NOT EXISTS {EMBEDDINGS_TABLE} (
-        id           TEXT PRIMARY KEY,
-        document_id  TEXT NOT NULL REFERENCES {DOCUMENTS_TABLE} (id) ON DELETE CASCADE,
-        chunk_index  INT NOT NULL,
-        chunk_text   TEXT NOT NULL,
-        embedding    VECTOR({EMBEDDING_DIM}) NOT NULL,
-        model_name   TEXT NOT NULL,
-        content_hash TEXT NOT NULL,
-        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-        UNIQUE (document_id, chunk_index, model_name)
-    )
-    """,
-    f"CREATE INDEX IF NOT EXISTS idx_{EMBEDDINGS_TABLE}_document_id ON {EMBEDDINGS_TABLE} (document_id)",
-    f"CREATE INDEX IF NOT EXISTS idx_{EMBEDDINGS_TABLE}_embedding "
-    f"ON {EMBEDDINGS_TABLE} USING hnsw (embedding vector_cosine_ops)",
-]
-
-with connect() as conn:
-    with conn.cursor() as cur:
-        for statement in DDL_STATEMENTS:
-            cur.execute(statement)
-    conn.commit()
-
-print(f"Schema ready: {DOCUMENTS_TABLE}, {EMBEDDINGS_TABLE} (vector({EMBEDDING_DIM}))")
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ## Harvest weather narratives from the NWS API
 # MAGIC
@@ -235,6 +184,9 @@ GAZETTEER = {
     "austin, tx": (30.2672, -97.7431),
     "miami, fl": (25.7617, -80.1918),
     "new york, ny": (40.7128, -74.0060),
+    "los angeles, ca": (34.0522, -118.2437),
+    "houston, tx": (29.7604, -95.3698),
+    "phoenix, az": (33.4484, -112.0740),
     "denver, co": (39.7392, -104.9903),
     "seattle, wa": (47.6062, -122.3321),
     "new orleans, la": (29.9511, -90.0715),

@@ -64,7 +64,7 @@ NWS itself does no geocoding, and it only covers US territory.
 |---|---|
 | `id` | NWS alert id, or `sha256(grid + period start)[:40]` for forecasts |
 | `location`, `latitude`, `longitude` | Resolved place name plus the coordinates behind it |
-| `source_type` | `alert`, `forecast`, or `forecast_hourly` |
+| `source_type` | `alert` or `forecast` |
 | `event`, `headline` | e.g. `Flash Flood Warning`; the headline is display text |
 | `narrative_text` | **The text that gets embedded** |
 | `content_hash` | `sha256(narrative_text)` — drives re-embedding |

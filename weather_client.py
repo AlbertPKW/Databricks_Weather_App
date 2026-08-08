@@ -33,7 +33,6 @@ _DEFAULT_TIMEOUT = 30
 
 SOURCE_ALERT = "alert"
 SOURCE_FORECAST = "forecast"
-SOURCE_HOURLY = "forecast_hourly"
 
 # "41.88,-87.63" or "41.88, -87.63"
 _LATLON_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$")
@@ -218,19 +217,6 @@ class WeatherClient:
             period["_updated"] = props.get("updated") or props.get("updateTime")
         return periods
 
-    def get_hourly_forecast_periods(
-        self, loc: ResolvedLocation, limit: int = 24
-    ) -> list[dict]:
-        """Hourly forecast periods. Terse - useful mainly as extra volume."""
-        data = self.get(
-            f"/gridpoints/{loc.grid_id}/{loc.grid_x},{loc.grid_y}/forecast/hourly"
-        )
-        props = data.get("properties", {})
-        periods = props.get("periods", [])[:limit]
-        for period in periods:
-            period["_updated"] = props.get("updated") or props.get("updateTime")
-        return periods
-
     # -- normalization -----------------------------------------------------
 
     @staticmethod
@@ -339,12 +325,6 @@ class WeatherClient:
         if SOURCE_FORECAST in source_types:
             for period in self.get_forecast_periods(loc, limit=limit):
                 doc = self.normalize_forecast_period(period, loc, SOURCE_FORECAST)
-                if doc:
-                    documents.append(doc)
-
-        if SOURCE_HOURLY in source_types:
-            for period in self.get_hourly_forecast_periods(loc, limit=limit):
-                doc = self.normalize_forecast_period(period, loc, SOURCE_HOURLY)
                 if doc:
                     documents.append(doc)
 
