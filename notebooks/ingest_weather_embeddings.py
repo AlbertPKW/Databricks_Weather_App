@@ -291,10 +291,12 @@ def resolve_location(location: str) -> dict:
 
 
 def fetch_alerts(loc: dict, limit: int) -> list[dict]:
+    # /alerts/active has no `limit` param - sending one 400s ("Query
+    # parameter \"limit\" is not recognized"). It always returns every
+    # active alert for the point; the cap is applied client-side below.
     resp = session.get(
         f"{NWS_API_BASE_URL}/alerts/active",
-        params={"point": f"{round(loc['latitude'], 4)},{round(loc['longitude'], 4)}",
-                "limit": limit},
+        params={"point": f"{round(loc['latitude'], 4)},{round(loc['longitude'], 4)}"},
         timeout=30,
     )
     resp.raise_for_status()
