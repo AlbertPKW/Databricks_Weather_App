@@ -196,11 +196,16 @@ class WeatherClient:
     # -- raw endpoint calls ------------------------------------------------
 
     def get_active_alerts(self, loc: ResolvedLocation, limit: int = 50) -> list[dict]:
-        """Active alerts covering this point (watches, warnings, advisories)."""
+        """Active alerts covering this point (watches, warnings, advisories).
+
+        /alerts/active has no `limit` parameter - passing one gets a 400
+        ("Query parameter \"limit\" is not recognized"). The endpoint always
+        returns every active alert for the point, so the cap is applied
+        client-side after the fact instead.
+        """
         data = self.get(
             "/alerts/active",
-            params={"point": f"{round(loc.latitude, 4)},{round(loc.longitude, 4)}",
-                    "limit": limit},
+            params={"point": f"{round(loc.latitude, 4)},{round(loc.longitude, 4)}"},
         )
         return data.get("features", [])[:limit]
 
