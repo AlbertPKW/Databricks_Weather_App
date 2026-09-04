@@ -28,7 +28,7 @@
 # MAGIC chunking parameters here, change them there too** — the query vector and
 # MAGIC the stored vectors have to come from the same recipe.
 # MAGIC
-# MAGIC It reuses the same Lakebase secret (scope `database`, key `lakebase-url`)
+# MAGIC It reuses the same Lakebase secret (scope `database`, key `lakebase-url-weather`)
 # MAGIC that `lakebase.py` uses, so no extra secrets are needed.
 
 # COMMAND ----------
@@ -121,7 +121,7 @@ from databricks.sdk import WorkspaceClient
 
 w = WorkspaceClient()
 
-secret = w.secrets.get_secret(scope="database", key="lakebase-url")
+secret = w.secrets.get_secret(scope="database", key="lakebase-url-weather")
 lakebase_url = base64.b64decode(secret.value).decode("utf-8")
 parsed = urlparse(lakebase_url)
 

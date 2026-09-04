@@ -7,7 +7,7 @@ env:
   - name: LAKEBASE_SECRET_SCOPE
     value: "database"
   - name: LAKEBASE_SECRET_KEY
-    value: "lakebase-url"
+    value: "lakebase-url-weather"
 
   # National Weather Service API. No key required - but the User-Agent is,
   # and it must identify your app with a real contact address.
